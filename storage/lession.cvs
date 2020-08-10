@@ -1,0 +1,41 @@
+Koch 1 (K M)	K M
+Koch 2 (R)	K M R
+Koch 3 (S)	K M R S
+Koch 4 (U)	K M R S U
+Koch 5 (A)	K M R S U A
+Koch 6 (P)	K M R S U A P
+Koch 7 (T)	K M R S U A P T
+Koch 8 (L)	K M R S U A P T L
+Koch 9 (O)	K M R S U A P T L O
+Koch 10 (W)	K M R S U A P T L O W
+Koch 11 (I)	K M R S U A P T L O W I
+Koch 12 (.)	K M R S U A P T L O W I .
+Koch 13 (N)	K M R S U A P T L O W I . N
+Koch 14 (J)	K M R S U A P T L O W I . N J
+Koch 15 (E)	K M R S U A P T L O W I . N J E
+Koch 16 (F)	K M R S U A P T L O W I . N J E F
+Koch 17 (0)	K M R S U A P T L O W I . N J E F 0
+Koch 18 (Y)	K M R S U A P T L O W I . N J E F 0 Y
+Koch 19 (,)	K M R S U A P T L O W I . N J E F 0 Y ,
+Koch 20 (V)	K M R S U A P T L O W I . N J E F 0 Y , V
+Koch 21 (G)	K M R S U A P T L O W I . N J E F 0 Y , V G
+Koch 22 (5)	K M R S U A P T L O W I . N J E F 0 Y , V G 5
+Koch 23 (/)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 /
+Koch 24 (Q)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q
+Koch 25 (9)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9
+Koch 26 (Z)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z
+Koch 27 (H)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H
+Koch 28 (3)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3
+Koch 29 (8)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8
+Koch 30 (B)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8 B
+Koch 31 (?)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8 B ?
+Koch 32 (4)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8 B ? 4
+Koch 33 (2)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8 B ? 4 2
+Koch 34 (7)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8 B ? 4 2 7
+Koch 35 (C)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8 B ? 4 2 7 C
+Koch 36 (1)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8 B ? 4 2 7 C 1
+Koch 37 (D)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8 B ? 4 2 7 C 1 D
+Koch 38 (6)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8 B ? 4 2 7 C 1 D 6
+Koch 39 (X)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8 B ? 4 2 7 C 1 D 6 X
+Koch 40 (=)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8 B ? 4 2 7 C 1 D 6 X =
+Koch 41 (+)	K M R S U A P T L O W I . N J E F 0 Y , V G 5 / Q 9 Z H 3 8 B ? 4 2 7 C 1 D 6 X = +
