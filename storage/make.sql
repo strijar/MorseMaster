@@ -2,8 +2,7 @@
 
 CREATE TABLE codes_group (
     id		INT PRIMARY KEY,
-    info	TEXT,
-    enable	INT
+    info	TEXT
 );
 
 .import codes_group.cvs codes_group
