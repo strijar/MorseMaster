@@ -3,7 +3,7 @@ public class Lession {
 
 	private Storage		storage = null;
 	private String[]	symbols = null;
-	private String		question = null;	
+	private Question	question = null;	
 	
 	public Lession(Storage storage, String[] symbols) {
 		this.storage = storage;
@@ -14,13 +14,16 @@ public class Lession {
 		storage.initStat(symbols);
 	}
 	
-	public String getQuestion() {
+	public Question getQuestion() {
 		question = storage.getNext();
 		return question;
 	}
 	
-	public void setAnswer(String symbol) {
-		storage.updateStat(question, question.equals(symbol));
+	public boolean setAnswer(String symbol) {
+		boolean correct = question.symbol.equals(symbol);
+		storage.updateStat(question.symbol, correct);
+		
+		return correct;
 	}
 
 }

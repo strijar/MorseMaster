@@ -4,14 +4,14 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
 public class Sound {
-	private static final int	SAMPLE_RATE = 16*1024;
+	private static final int	SAMPLE_RATE = 8000;
 
 	private int					freq = 700;
 	private int					attack = 5;
 	private int					dit = 100;
 	private int					dah = 300;
 	
-	SourceDataLine			line;
+	SourceDataLine				line;
 
 	public Sound() throws LineUnavailableException {
         final AudioFormat af = new AudioFormat(SAMPLE_RATE, 8, 1, true, true);
@@ -26,7 +26,7 @@ public class Sound {
 		dah = dit * 3;
 	}
 	
-	public void tone(int ms) {
+	public void tone(int ms, int freq) {
 		int 			length = SAMPLE_RATE * ms / 1000;
 		int				a = SAMPLE_RATE * attack / 1000;
 		int				r = length - a;
@@ -62,11 +62,11 @@ public class Sound {
 		for (char c : text.toCharArray()) {
 			switch (c) {
 			case '.':
-				tone(dit);
+				tone(dit, freq);
 				pause(dit);
 				break;
 			case '-':
-				tone(dah);
+				tone(dah, freq);
 				pause(dit);
 				break;
 			case ' ':
@@ -76,6 +76,13 @@ public class Sound {
 				pause(dit*6);
 				break;
 			}
+		}
+	}
+	
+	public void alarm() {
+		for (int i = 0; i < 3; i++) {
+			tone(50, 220);
+			tone(50, 440);
 		}
 	}
 

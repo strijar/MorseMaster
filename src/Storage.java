@@ -14,7 +14,7 @@ public class Storage {
 	public Storage() throws SQLException {
 		connection = DriverManager.getConnection("jdbc:sqlite:storage.db");
 		stm_code = connection.prepareStatement("SELECT code FROM codes WHERE symbol = ?");
-		stm_next = connection.prepareStatement("SELECT symbol, correct, 1.0*correct/(correct+mistake) AS e FROM stat ORDER BY e, lastseen LIMIT 2");
+		stm_next = connection.prepareStatement("SELECT symbol, correct, 5*correct/(correct+mistake) AS ratio FROM stat ORDER BY ratio, lastseen LIMIT 2");
 	}
 	
 	public String getCode(String text) {
@@ -109,7 +109,7 @@ public class Storage {
 		}
 	}
 
-	public String getNext() {
+	public Question getNext() {
 		try {
 			ResultSet	rs = stm_next.executeQuery();
 			
@@ -118,7 +118,7 @@ public class Storage {
 				rs.next();
 			}
 			
-			return rs.getString("symbol");
+			return new Question(rs.getString("symbol"), rs.getInt("correct"), rs.getDouble("ratio"));
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return null;
