@@ -11,8 +11,8 @@ CREATE TABLE codes_group (
 
 CREATE TABLE codes (
     group_id	INT,
-    symbol	TEXT PRIMARY KEY,
-    code	TEXT
+    symbol		TEXT PRIMARY KEY,
+    code		TEXT
 );
 
 .import codes.cvs codes
@@ -20,9 +20,9 @@ CREATE TABLE codes (
 ---
 
 CREATE TABLE stat (
-    symbol	TEXT PRIMARY KEY ON CONFLICT REPLACE,
-    correct	INT,
-    mistake	INT,
+    symbol		TEXT PRIMARY KEY,
+    correct		INT,
+    mistake		INT,
     lastseen	INT
 );
 
