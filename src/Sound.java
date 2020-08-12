@@ -62,7 +62,9 @@ public class Sound {
 		new Thread(new Runnable() {
 		    @Override 
 		    public void run() {
-				for (char c : text.toCharArray()) {
+				pause(dah);
+
+		    	for (char c : text.toCharArray()) {
 					switch (c) {
 					case '.':
 						tone(dit, freq);

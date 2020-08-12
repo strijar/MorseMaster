@@ -9,4 +9,12 @@ public class Question {
 		this.correct = correct;
 	}
 
+	public int length() {
+		return symbol.length();
+	}
+	
+	public String getSecret(String prefix) {
+		return prefix + "*".repeat(symbol.length() - prefix.length());
+	}
+
 }

@@ -28,6 +28,7 @@ public class App extends JFrame implements KeyListener {
 	private Lession			lession = null;
 	private Timer			timer = null;
 	private Question		question = null;
+	private String			answer_buf;
 
 	private JCheckBox 		run_box = null;
 	private JSlider 		wpm_slider = null;
@@ -36,7 +37,7 @@ public class App extends JFrame implements KeyListener {
 	private JSlider 		adv_level_slider = null;
 	private JSlider 		adv_max_slider = null;
 	
-	private int				question_wait = 1000;
+	private int				question_wait = 0000;
 	private int				help_wait = 3000;
 	
 	/* * */
@@ -44,6 +45,7 @@ public class App extends JFrame implements KeyListener {
 	private class LessionTask extends TimerTask {
 		public void run() {
 			question = lession.getQuestion();
+			answer_buf = "";
 
 			boolean	help = question.correct <= 3;  
 
@@ -53,7 +55,7 @@ public class App extends JFrame implements KeyListener {
 				info_label.setText(question.symbol);
 				startTimer(help_wait);
 			} else {
-				info_label.setText("*");
+				info_label.setText("*".repeat(question.length()));
 				
 				if (question_wait > 0) {
 					startTimer(question_wait);
@@ -271,18 +273,23 @@ public class App extends JFrame implements KeyListener {
 			if (key == ' ') {
 				playQuestion();
 			} else {
-				timer.cancel();
+				answer_buf += key;
+				info_label.setText(question.getSecret(answer_buf));
+				
+				if (answer_buf.length() == question.length()) {
+					timer.cancel();
 
-				if (lession.setAnswer(String.valueOf(key))) {
-					info_label.setBackground(Color.GREEN);
-					startTimer(500);
-				} else {
-					info_label.setText(question.symbol);
-					info_label.setBackground(Color.RED);
-					sound.alarm();
-					startTimer(help_wait);
+					if (lession.setAnswer(answer_buf)) {
+						info_label.setBackground(Color.GREEN);
+						startTimer(500);
+					} else {
+						info_label.setText(question.symbol);
+						info_label.setBackground(Color.RED);
+						sound.alarm();
+						startTimer(help_wait);
+					}
+					question = null;
 				}
-				question = null;
 			}
 		}
 	}

@@ -12,6 +12,7 @@ public class Storage {
 	private PreparedStatement	stm_code = null;
 	private PreparedStatement	stm_next_symbol = null;
 	private PreparedStatement	stm_next_adv = null;
+	private PreparedStatement	stm_count_adv = null;
 	private PreparedStatement	stm_get_opt = null;
 	private PreparedStatement	stm_set_opt = null;
 	
@@ -20,9 +21,12 @@ public class Storage {
 	
 	public Storage() throws SQLException {
 		connection = DriverManager.getConnection("jdbc:sqlite:storage.db");
+		connection.setAutoCommit(false);
+
 		stm_code = connection.prepareStatement("SELECT code FROM codes WHERE symbol = ?");
-		stm_next_symbol = connection.prepareStatement("SELECT symbol, correct, 5*correct/(correct+mistake/3) AS ratio FROM stat ORDER BY ratio, lastseen LIMIT 2");
+		stm_next_symbol = connection.prepareStatement("SELECT symbol, correct, 5*correct/(correct+mistake/3) AS ratio, 100*correct/(correct+mistake/2) as level FROM stat WHERE NOT (level >= ? AND correct >= 10) ORDER BY ratio, lastseen LIMIT 2");
 		stm_next_adv = connection.prepareStatement("SELECT symbol, 100*correct/(correct+mistake/2) AS ratio FROM stat WHERE ratio >= ? AND correct >= 10 ORDER BY ratio DESC, lastseen ASC");
+		stm_count_adv = connection.prepareStatement("SELECT count(*) as count, 100*correct/(correct+mistake/2) AS ratio FROM stat WHERE ratio >= ? AND correct >= 10");
 		stm_get_opt = connection.prepareStatement("SELECT val FROM opts WHERE name = ?");
 		stm_set_opt = connection.prepareStatement("UPDATE opts SET val = ? WHERE name = ?");
 	}
@@ -79,6 +83,7 @@ public class Storage {
 
 			stm.execute("DELETE FROM stat");
 			stm.close();
+			connection.commit();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -94,6 +99,7 @@ public class Storage {
 				stm.execute();
 			}
 			stm.close();
+			connection.commit();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -119,11 +125,13 @@ public class Storage {
 		}
 	}
 
-	public Question getNextSymbol() {
+	public Question getNextSymbol(int remain) {
 		try {
+			stm_next_symbol.setInt(1, adv_level);
+
 			ResultSet	rs = stm_next_symbol.executeQuery();
 			
-			if (Math.random() > 0.5) {
+			if (remain > 1 && Math.random() > 0.5) {
 				rs.next();
 				rs.next();
 			}
@@ -132,6 +140,19 @@ public class Storage {
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return null;
+		}
+	}
+	
+	public int getCountAdv() {
+		try {
+			stm_count_adv.setInt(1, adv_level);
+
+			ResultSet		rs = stm_count_adv.executeQuery();
+			
+			return rs.getInt("count");
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return 0;
 		}
 	}
 	
@@ -146,17 +167,13 @@ public class Storage {
 			Vector<String>	items = new Vector<String>();
 			
 			while (rs.next()) {
-				String item = rs.getString("symbol");
-				System.out.println(item);
-				items.add(item);
+				items.add(rs.getString("symbol"));
 			}
 			
 			for (int i = 0; i < count; i++)
 				question += items.elementAt((int) (Math.random() * items.size()));
 			
-			System.out.println(String.format("Adv: max:%d count:%d [%s]", max_ratio, count, question));
-			
-			return null;
+			return new Question(question, 999);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return null;
@@ -236,6 +253,14 @@ public class Storage {
 
 	public void setAdvMax(int val) {
 		adv_max = val;
+	}
+
+	public void commit() {
+		try {
+			connection.commit();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

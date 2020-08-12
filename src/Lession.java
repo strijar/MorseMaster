@@ -4,6 +4,7 @@ public class Lession {
 	private Storage		storage = null;
 	private String[]	symbols = null;
 	private Question	question = null;	
+	private int			count = 0;
 	
 	public Lession(Storage storage, String[] symbols) {
 		this.storage = storage;
@@ -15,23 +16,35 @@ public class Lession {
 	}
 	
 	public Question getQuestion() {
-		if (true && Math.random() >= 0.5) {
+		int	adv = storage.getCountAdv();
+		int remain = symbols.length - adv;
+		
+		if (adv > 0 && (remain == 0 || count++ % (remain+1) == 0)) {
 			question = storage.getNextAdv();
-			
-			if (question == null) {
-				question = storage.getNextSymbol();
-			}
 		} else {
-			question = storage.getNextSymbol();
+			question = storage.getNextSymbol(remain);
 		}
-
+		
+		// System.out.println(question.symbol);
+		
 		return question;
 	}
 	
 	public boolean setAnswer(String symbol) {
-		boolean correct = question.symbol.equals(symbol);
-		storage.updateStat(question.symbol, correct);
+		boolean correct = true;
 		
+		for (int i = 0; i < Math.min(symbol.length(), question.length()); i++) {
+			char q = question.symbol.charAt(i);
+			
+			if (symbol.charAt(i) == q) {
+				storage.updateStat(String.valueOf(q), true);
+			} else {
+				storage.updateStat(String.valueOf(q), false);
+				correct = false;
+			}
+		}
+		
+		storage.commit();
 		return correct;
 	}
 
