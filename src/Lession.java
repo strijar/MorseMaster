@@ -15,7 +15,16 @@ public class Lession {
 	}
 	
 	public Question getQuestion() {
-		question = storage.getNext();
+		if (true && Math.random() >= 0.5) {
+			question = storage.getNextAdv();
+			
+			if (question == null) {
+				question = storage.getNextSymbol();
+			}
+		} else {
+			question = storage.getNextSymbol();
+		}
+
 		return question;
 	}
 	

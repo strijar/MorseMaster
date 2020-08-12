@@ -58,32 +58,42 @@ public class Sound {
 		line.write(sin, 0, length);
 	}
 	
-	public void code(String text) {
-		for (char c : text.toCharArray()) {
-			switch (c) {
-			case '.':
-				tone(dit, freq);
-				pause(dit);
-				break;
-			case '-':
-				tone(dah, freq);
-				pause(dit);
-				break;
-			case ' ':
-				pause(dit*2);
-				break;
-			case '|':
-				pause(dit*6);
-				break;
-			}
-		}
+	public void code(final String text) {
+		new Thread(new Runnable() {
+		    @Override 
+		    public void run() {
+				for (char c : text.toCharArray()) {
+					switch (c) {
+					case '.':
+						tone(dit, freq);
+						pause(dit);
+						break;
+					case '-':
+						tone(dah, freq);
+						pause(dit);
+						break;
+					case ' ':
+						pause(dit*2);
+						break;
+					case '|':
+						pause(dit*6);
+						break;
+					}
+				}
+		    }
+		}).start();
 	}
 	
 	public void alarm() {
-		for (int i = 0; i < 3; i++) {
-			tone(50, 220);
-			tone(50, 440);
-		}
+		new Thread(new Runnable() {
+		    @Override 
+		    public void run() {
+		    	for (int i = 0; i < 3; i++) {
+		    		tone(50, 220);
+		    		tone(50, 440);
+		    	}
+		    }
+		}).start();
 	}
 
 }
