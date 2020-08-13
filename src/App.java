@@ -55,7 +55,7 @@ public class App extends JFrame implements KeyListener {
 				info_label.setText(question.symbol);
 				startTimer(help_wait);
 			} else {
-				info_label.setText("*".repeat(question.length()));
+				info_label.setText(question.getSecret(""));
 				
 				if (question_wait > 0) {
 					startTimer(question_wait);
@@ -280,8 +280,7 @@ public class App extends JFrame implements KeyListener {
 					timer.cancel();
 
 					if (lession.setAnswer(answer_buf)) {
-						info_label.setBackground(Color.GREEN);
-						startTimer(500);
+						startTimer(100);
 					} else {
 						info_label.setText(question.symbol);
 						info_label.setBackground(Color.RED);

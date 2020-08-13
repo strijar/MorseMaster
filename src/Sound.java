@@ -62,7 +62,7 @@ public class Sound {
 		new Thread(new Runnable() {
 		    @Override 
 		    public void run() {
-				pause(dah);
+				pause(100);
 
 		    	for (char c : text.toCharArray()) {
 					switch (c) {

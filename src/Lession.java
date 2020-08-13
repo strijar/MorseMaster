@@ -30,16 +30,18 @@ public class Lession {
 		return question;
 	}
 	
-	public boolean setAnswer(String symbol) {
+	public boolean setAnswer(String answer) {
 		boolean correct = true;
 		
-		for (int i = 0; i < Math.min(symbol.length(), question.length()); i++) {
+		for (int i = 0; i < Math.min(answer.length(), question.length()); i++) {
+			char a = answer.charAt(i);
 			char q = question.symbol.charAt(i);
 			
-			if (symbol.charAt(i) == q) {
+			if (a == q) {
 				storage.updateStat(String.valueOf(q), true);
 			} else {
 				storage.updateStat(String.valueOf(q), false);
+				storage.updateStat(String.valueOf(a), false);
 				correct = false;
 			}
 		}

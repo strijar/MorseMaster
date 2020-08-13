@@ -24,7 +24,7 @@ public class Storage {
 		connection.setAutoCommit(false);
 
 		stm_code = connection.prepareStatement("SELECT code FROM codes WHERE symbol = ?");
-		stm_next_symbol = connection.prepareStatement("SELECT symbol, correct, 5*correct/(correct+mistake/3) AS ratio, 100*correct/(correct+mistake/2) as level FROM stat WHERE NOT (level >= ? AND correct >= 10) ORDER BY ratio, lastseen LIMIT 2");
+		stm_next_symbol = connection.prepareStatement("SELECT symbol, correct, 5*correct/(correct+mistake/2) AS ratio, 100*correct/(correct+mistake/2) as level FROM stat WHERE NOT (level >= ? AND correct >= 10) ORDER BY ratio, lastseen LIMIT 2");
 		stm_next_adv = connection.prepareStatement("SELECT symbol, 100*correct/(correct+mistake/2) AS ratio FROM stat WHERE ratio >= ? AND correct >= 10 ORDER BY ratio DESC, lastseen ASC");
 		stm_count_adv = connection.prepareStatement("SELECT count(*) as count, 100*correct/(correct+mistake/2) AS ratio FROM stat WHERE ratio >= ? AND correct >= 10");
 		stm_get_opt = connection.prepareStatement("SELECT val FROM opts WHERE name = ?");
@@ -91,7 +91,7 @@ public class Storage {
 
 	public void initStat(String[] symbols) {
 		try {
-			PreparedStatement stm = connection.prepareStatement("INSERT OR IGNORE INTO stat (symbol, correct, mistake, lastseen) VALUES (?, 0, 5, ?)");
+			PreparedStatement stm = connection.prepareStatement("INSERT OR IGNORE INTO stat (symbol, correct, mistake, lastseen) VALUES (?, 0, 0, ?)");
 			
 			for (String symbol : symbols) {
 				stm.setString(1, symbol);

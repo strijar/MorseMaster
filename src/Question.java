@@ -14,7 +14,12 @@ public class Question {
 	}
 	
 	public String getSecret(String prefix) {
-		return prefix + "*".repeat(symbol.length() - prefix.length());
+		String res = prefix;
+		
+		for (int i = prefix.length(); i < symbol.length(); i++)
+			res += "*";
+			
+		return res;
 	}
 
 }
