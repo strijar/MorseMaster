@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Comparator;
 import java.util.Vector;
 
 public class Storage {
@@ -19,6 +20,24 @@ public class Storage {
 	private int					adv_level = 75;
 	private int					adv_max = 3;
 	
+	private class AdvItem {
+		public String	symbol;
+		public double	shuffle;
+		
+		public AdvItem(String symbol) {
+			this.symbol = symbol;
+			shuffle = Math.random();
+		}
+	}
+	
+	private class AdvItemShuffle implements Comparator<AdvItem> {
+		@Override
+		public int compare(AdvItem a, AdvItem b) {
+			return (a.shuffle > b.shuffle) ? 1 : -1;
+		}
+		
+	}
+	
 	public Storage() throws SQLException {
 		connection = DriverManager.getConnection("jdbc:sqlite:storage.db");
 		connection.setAutoCommit(false);
@@ -28,7 +47,7 @@ public class Storage {
 		stm_next_adv = connection.prepareStatement("SELECT symbol, 100*correct/(correct+mistake/2) AS ratio FROM stat WHERE ratio >= ? AND correct >= 10 ORDER BY ratio DESC, lastseen ASC");
 		stm_count_adv = connection.prepareStatement("SELECT count(*) as count, 100*correct/(correct+mistake/2) AS ratio FROM stat WHERE ratio >= ? AND correct >= 10");
 		stm_get_opt = connection.prepareStatement("SELECT val FROM opts WHERE name = ?");
-		stm_set_opt = connection.prepareStatement("UPDATE opts SET val = ? WHERE name = ?");
+		stm_set_opt = connection.prepareStatement("INSERT INTO opts (val, name) VALUES (?, ?)");
 	}
 	
 	public String getCode(String text) {
@@ -119,6 +138,7 @@ public class Storage {
 			stm.setString(2, symbol);
 			stm.execute();
 			stm.close();
+			connection.commit();
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return;
@@ -156,7 +176,7 @@ public class Storage {
 		}
 	}
 	
-	public Question getNextAdv() {
+	public Question getNextAdv(int adv) {
 		try {
 			stm_next_adv.setInt(1, adv_level);
 
@@ -164,14 +184,21 @@ public class Storage {
 			String			question = "";
 			int				max_ratio = Math.min(rs.getInt("ratio"), 99);
 			int				count = 2 + (adv_max - 1) * (max_ratio - adv_level) / (100 - adv_level);
-			Vector<String>	items = new Vector<String>();
+			Vector<AdvItem>	items = new Vector<AdvItem>();
 			
-			while (rs.next()) {
-				items.add(rs.getString("symbol"));
+			while (rs.next())
+				items.add(new AdvItem(rs.getString("symbol")));
+
+			for (int i = items.size(); i < count; i++) {
+				AdvItem item = items.get(i % adv);
+				
+				items.add(new AdvItem(item.symbol));
 			}
 			
+			items.sort(new AdvItemShuffle());
+						
 			for (int i = 0; i < count; i++)
-				question += items.elementAt((int) (Math.random() * items.size()));
+				question += items.get(i).symbol;
 			
 			return new Question(question, 999);
 		} catch (SQLException e) {
@@ -197,7 +224,7 @@ public class Storage {
 		return items;
 	}
 
-	public int getOptInt(String name) {
+	public int getOptInt(String name, int def) {
 		try {
 			stm_get_opt.setString(1, name);
 
@@ -205,10 +232,8 @@ public class Storage {
 			
 			return rs.getInt("val");
 		} catch (SQLException e) {
-			e.printStackTrace();
+			return def;
 		}
-		
-		return 0;
 	}
 
 	public void setOptInt(String name, int x) {
@@ -217,6 +242,7 @@ public class Storage {
 			stm_set_opt.setString(2, name);
 
 			stm_set_opt.execute();
+			connection.commit();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -242,6 +268,7 @@ public class Storage {
 			stm_set_opt.setString(2, name);
 
 			stm_set_opt.execute();
+			connection.commit();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

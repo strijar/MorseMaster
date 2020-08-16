@@ -20,12 +20,12 @@ public class Lession {
 		int remain = symbols.length - adv;
 		
 		if (adv > 0 && (remain == 0 || count++ % (remain+1) == 0)) {
-			question = storage.getNextAdv();
+			question = storage.getNextAdv(adv);
 		} else {
 			question = storage.getNextSymbol(remain);
 		}
 		
-		// System.out.println(question.symbol);
+		System.out.println(question.symbol);
 		
 		return question;
 	}

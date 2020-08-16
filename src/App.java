@@ -1,4 +1,6 @@
 import javax.swing.*;
+import javax.swing.JSpinner.DefaultEditor;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -21,7 +23,7 @@ import com.alee.managers.style.StyleId;
 @SuppressWarnings("serial")
 public class App extends JFrame implements KeyListener {
 	
-	static final String 	ABOUT = "<html><center><h1>Version 1.0</h1><font size=3>de R1CBU</font></center></html>";
+	static final String 	ABOUT = "<html><center><h1>Version 1.1</h1><font size=3>de R1CBU</font></center></html>";
 	
 	private Storage			storage = null;
 	private Sound			sound = null;
@@ -30,15 +32,22 @@ public class App extends JFrame implements KeyListener {
 	private Question		question = null;
 	private String			answer_buf;
 
+	private JPanel			opt_panel = null;
+	private GridBagLayout	grid = null;
 	private JCheckBox 		run_box = null;
-	private JSlider 		wpm_slider = null;
+	private JSpinner 		wpm_spinner = null;
 	private JLabel			info_label = null;
 	private WebComboBox		lession_list = null;
-	private JSlider 		adv_level_slider = null;
-	private JSlider 		adv_max_slider = null;
+	private WebComboBox		timeout_list = null;
+	private JSpinner 		adv_level_spinner = null;
+	private JSpinner 		adv_max_spinner = null;
+	private JSpinner 		adv_repeat_spinner = null;
 	
-	private int				question_wait = 0000;
+	private int				question_wait = 0;
 	private int				help_wait = 3000;
+	
+	private String[]		timeout_labels = {"Forever", "1 sec", "2 sec", "3 sec"};
+	private int[]			timeout_items = {0, 1000, 2000, 3000};
 	
 	/* * */
 	
@@ -51,26 +60,28 @@ public class App extends JFrame implements KeyListener {
 
 			info_label.setBackground(Color.white);
 			
+			int ms = playQuestion((Integer) adv_repeat_spinner.getValue());
+			
 			if (help) {
 				info_label.setText(question.symbol);
-				startTimer(help_wait);
+				startTimer(ms + help_wait);
 			} else {
 				info_label.setText(question.getSecret(""));
 				
 				if (question_wait > 0) {
-					startTimer(question_wait);
+					startTimer(ms + question_wait);
 				}
 			}
-			playQuestion();
 		}
 	}
 	
 	private class RunListener implements ItemListener {
 		public void itemStateChanged(ItemEvent e) {
 			if (run_box.isSelected()) {
-				startTimer(5000);
 				info_label.setText("Get ready!");
-				sound.code("...- ...- ...-");
+				int ms = sound.code("...- ...- ...-");
+				
+				startTimer(ms + 1000);
 			} else {
 				timer.cancel();
 				info_label.setText(ABOUT);
@@ -81,10 +92,10 @@ public class App extends JFrame implements KeyListener {
 	
 	private class WPMListener implements ChangeListener {
 		public void stateChanged(ChangeEvent e) {
-			int val = wpm_slider.getValue();
-			
+			int val = (Integer) wpm_spinner.getValue();
+
 			sound.wpm(val);
-			storage.setOptInt("wps", val);
+			storage.setOptInt("wpm", val);
 		}
 	}
 	
@@ -97,9 +108,18 @@ public class App extends JFrame implements KeyListener {
 		}
 	}
 
+	private class TimeoutListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			int index = timeout_list.getSelectedIndex();
+			
+			storage.setOptInt("timeout", index);
+			question_wait = timeout_items[index];
+		}
+	}
+
 	private class AdvLevelListener implements ChangeListener {
 		public void stateChanged(ChangeEvent e) {
-			int val = adv_level_slider.getValue();
+			int val = (Integer) adv_level_spinner.getValue();
 			
 			storage.setAdvLevel(val);
 			storage.setOptInt("adv_level", val);
@@ -108,10 +128,18 @@ public class App extends JFrame implements KeyListener {
 
 	private class AdvMaxListener implements ChangeListener {
 		public void stateChanged(ChangeEvent e) {
-			int val = adv_max_slider.getValue();
+			int val = (Integer) adv_max_spinner.getValue();
 			
 			storage.setAdvMax(val);
 			storage.setOptInt("adv_max", val);
+		}
+	}
+
+	private class AdvRepeatListener implements ChangeListener {
+		public void stateChanged(ChangeEvent e) {
+			int val = (Integer) adv_repeat_spinner.getValue();
+			
+			storage.setOptInt("adv_repeat", val);
 		}
 	}
 	
@@ -135,7 +163,7 @@ public class App extends JFrame implements KeyListener {
 		getRootPane().putClientProperty(StyleId.STYLE_PROPERTY, StyleId.frameDecorated);
 		setIconImages(WebLookAndFeel.getImages());
 
-		createToolbar();
+		createOpt();
 		createCenter();
 		loadOpts();
 
@@ -147,65 +175,112 @@ public class App extends JFrame implements KeyListener {
 		setVisible(true);
 	}
 	
-	private void createToolbar() {
-		final JToolBar	toolbar = new JToolBar(SwingConstants.VERTICAL);
+	private void createOpt() {
+		opt_panel = new JPanel();
+		grid = new GridBagLayout();
 		
-		toolbar.putClientProperty(StyleId.STYLE_PROPERTY, StyleId.toolbar);
+		opt_panel.setLayout(grid);
+		opt_panel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
+		GridBagHelper helper = new GridBagHelper();
+
+		// -- //
+		
+		helper.nextCell().alignLeft().gap(10);
+		opt_panel.add(new JLabel("Lession:"), helper.get());
+
+		helper.nextCell().fillHorizontally();
 		lession_list = new WebComboBox(storage.getLessions());
 		lession_list.addActionListener(new LessionListener());
 		lession_list.setFocusable(false);
-		lession_list.setToolTip("Lession");
-		toolbar.add(lession_list);
+		opt_panel.add(lession_list, helper.get());
+		
+		// -- //
+		
+		helper.nextRow().nextCell().alignLeft().gap(10);
+		opt_panel.add(new JLabel("Speed (WPM):"), helper.get());
+		helper.nextCell().fillHorizontally();
 
-		toolbar.addSeparator(new Dimension(20, 10));
+		JSpinner.DefaultEditor editor;
+		
+		wpm_spinner = new JSpinner(new SpinnerNumberModel(18, 15, 40, 1));
+		editor = (DefaultEditor) wpm_spinner.getEditor();
+		editor.getTextField().setEditable(false);
+		editor.getTextField().setFocusable(false);
+		
+		wpm_spinner.addChangeListener(new WPMListener());
+		opt_panel.add(wpm_spinner, helper.get());
 
-		wpm_slider = new JSlider(JSlider.HORIZONTAL, 15, 40, 18);
-		wpm_slider.putClientProperty(StyleId.STYLE_PROPERTY, StyleId.sliderTickLabel);
-		wpm_slider.setFocusable(false);
-		wpm_slider.addChangeListener(new WPMListener());
-		wpm_slider.setMajorTickSpacing(5);
-		wpm_slider.setMinorTickSpacing(1);
-		wpm_slider.setPaintTicks(true);
-		wpm_slider.setToolTipText("WPS");
-		wpm_slider.setPaintLabels(true);
-		
-		toolbar.add(wpm_slider);
+		// -- //
 
-		toolbar.addSeparator(new Dimension(20, 10));
+		helper.nextRow().nextCell().alignLeft().gap(10);
+		opt_panel.add(new JLabel("Answer timeout:"), helper.get());
 		
-		adv_level_slider = new JSlider(JSlider.HORIZONTAL, 50, 90, 75);
-		adv_level_slider.putClientProperty(StyleId.STYLE_PROPERTY, StyleId.sliderTickLabel);
-		adv_level_slider.setFocusable(false);
-		adv_level_slider.addChangeListener(new AdvLevelListener());
-		adv_level_slider.setMajorTickSpacing(5);
-		adv_level_slider.setPaintTicks(true);
-		adv_level_slider.setToolTipText("Advanced level");
-		adv_level_slider.setPaintLabels(true);
+		helper.nextCell().fillHorizontally();
+		timeout_list = new WebComboBox(timeout_labels);
+		timeout_list.addActionListener(new TimeoutListener());
+		timeout_list.setFocusable(false);
+		opt_panel.add(timeout_list, helper.get());
 		
-		toolbar.add(adv_level_slider);
+		// -- //
+		
+		helper.insertEmptyRow(opt_panel, 24);
+		helper.nextRow().nextCell().setGridWidth(2);
 
-		adv_max_slider = new JSlider(JSlider.HORIZONTAL, 2, 7, 3);
-		adv_max_slider.putClientProperty(StyleId.STYLE_PROPERTY, StyleId.sliderTickLabel);
-		adv_max_slider.setFocusable(false);
-		adv_max_slider.addChangeListener(new AdvMaxListener());
-		adv_max_slider.setMajorTickSpacing(1);
-		adv_max_slider.setPaintTicks(true);
-		adv_max_slider.setToolTipText("Advanced max symbols");
-		adv_max_slider.setPaintLabels(true);
+		opt_panel.add(new JLabel("Advanced"), helper.get());
+
+		helper.nextRow().nextCell().alignLeft().gap(10);
+		opt_panel.add(new JLabel("Level (%):"), helper.get());
+		helper.nextCell().fillHorizontally();
+
+		adv_level_spinner = new JSpinner(new SpinnerNumberModel(75, 50, 95, 1));
+		editor = (DefaultEditor) adv_level_spinner.getEditor();
+		editor.getTextField().setEditable(false);
+		editor.getTextField().setFocusable(false);
+		adv_level_spinner.addChangeListener(new AdvLevelListener());
+		opt_panel.add(adv_level_spinner, helper.get());
+		helper.nextRow().nextCell().alignLeft().gap(10);
+
+		// --//
 		
-		toolbar.add(adv_max_slider);
+		opt_panel.add(new JLabel("Max (char):"), helper.get());
+		helper.nextCell().fillHorizontally();
+
+		adv_max_spinner = new JSpinner(new SpinnerNumberModel(3, 2, 7, 1));
+		editor = (DefaultEditor) adv_max_spinner.getEditor();
+		editor.getTextField().setEditable(false);
+		editor.getTextField().setFocusable(false);
+		adv_max_spinner.addChangeListener(new AdvMaxListener());
+		opt_panel.add(adv_max_spinner, helper.get());
+
+		// -- //
 		
-		toolbar.addSeparator(new Dimension(20, 10));
+		helper.nextRow().nextCell().alignLeft().gap(10);
+
+		opt_panel.add(new JLabel("Repeat:"), helper.get());
+		helper.nextCell().fillHorizontally();
+
+		adv_repeat_spinner = new JSpinner(new SpinnerNumberModel(1, 1, 3, 1));
+		editor = (DefaultEditor) adv_repeat_spinner.getEditor();
+		editor.getTextField().setEditable(false);
+		editor.getTextField().setFocusable(false);
+		adv_repeat_spinner.addChangeListener(new AdvRepeatListener());
+		opt_panel.add(adv_repeat_spinner, helper.get());
+		
+		// -- //
+		
+		helper.insertEmptyRow(opt_panel, 24);
+		helper.nextRow().nextCell().alignLeft();
 		
 		run_box = new JCheckBox("Run", false);
 		run_box.putClientProperty(StyleId.STYLE_PROPERTY, StyleId.checkbox);
 		run_box.setFocusable(false);
-		
+		run_box.setMnemonic(KeyEvent.VK_R);
 		run_box.addItemListener(new RunListener());
-		toolbar.add(run_box);
+		opt_panel.add(run_box, helper.get());
+		helper.insertEmptyFiller(opt_panel);
 		
-		add(toolbar, BorderLayout.EAST);
+		add(opt_panel, BorderLayout.EAST);
 	}
 	
 	private void createCenter() {
@@ -230,21 +305,28 @@ public class App extends JFrame implements KeyListener {
 	}
 	
 	private void loadOpts() {
-		int wpm = storage.getOptInt("wpm");
-		wpm_slider.setValue(wpm);
+		int wpm = storage.getOptInt("wpm", 18);
+		wpm_spinner.setValue(wpm);
 		sound.wpm(wpm);
 		
 		String lession = storage.getOptString("lession");
 		lession_list.setSelectedItem(lession);
 		loadLession(lession);
+		
+		int timeout = storage.getOptInt("timeout", 0);
+		timeout_list.setSelectedIndex(timeout);
+		question_wait = timeout_items[timeout];
 
-		int adv_level = storage.getOptInt("adv_level");
-		adv_level_slider.setValue(adv_level);
+		int adv_level = storage.getOptInt("adv_level", 75);
+		adv_level_spinner.setValue(adv_level);
 		storage.setAdvLevel(adv_level);
 
-		int adv_max = storage.getOptInt("adv_max");
-		adv_max_slider.setValue(adv_max);
+		int adv_max = storage.getOptInt("adv_max", 2);
+		adv_max_spinner.setValue(adv_max);
 		storage.setAdvMax(adv_max);
+		
+		int adv_repeat = storage.getOptInt("adv_repeat", 1);
+		adv_repeat_spinner.setValue(adv_repeat);
 	}
 
 	private void startTimer(int delay) {
@@ -252,9 +334,15 @@ public class App extends JFrame implements KeyListener {
 		timer.schedule(new LessionTask(), delay);
 	}
 	
-	private void playQuestion() {
-		String 	code = storage.getCode(question.symbol);
-		sound.code(code);
+	private int playQuestion(Integer x) {
+		String 	q = storage.getCode(question.symbol);
+		String	code = q;
+		
+		if (question.length() > 1)
+			for (int i = 1; i < x; i++)
+				code += "|" + q;
+	
+		return sound.code(code);
 	}
 	
 	@Override
@@ -267,29 +355,37 @@ public class App extends JFrame implements KeyListener {
 
 	@Override
 	public void keyTyped(KeyEvent e) {
-		if (run_box.isSelected() && question != null) {
-			char key = Character.toUpperCase(e.getKeyChar());
+		if (e.isAltDown())
+			return;
+		
+		if (!run_box.isSelected())
+			return;
+		
+		if (question == null)
+			return;
+		
+		char key = Character.toUpperCase(e.getKeyChar());
 			
-			if (key == ' ') {
-				playQuestion();
-			} else {
-				answer_buf += key;
-				info_label.setText(question.getSecret(answer_buf));
+		if (key == ' ') {
+			playQuestion(1);
+			return;
+		}
+			
+		answer_buf += key;
+		info_label.setText(question.getSecret(answer_buf));
 				
-				if (answer_buf.length() == question.length()) {
-					timer.cancel();
+		if (answer_buf.length() == question.length()) {
+			timer.cancel();
 
-					if (lession.setAnswer(answer_buf)) {
-						startTimer(100);
-					} else {
-						info_label.setText(question.symbol);
-						info_label.setBackground(Color.RED);
-						sound.alarm();
-						startTimer(help_wait);
-					}
-					question = null;
-				}
+			if (lession.setAnswer(answer_buf)) {
+				startTimer(100);
+			} else {
+				info_label.setText(question.symbol);
+				info_label.setBackground(Color.RED);
+				sound.alarm();
+				startTimer(help_wait);
 			}
+			question = null;
 		}
 	}
 	
