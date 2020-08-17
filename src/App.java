@@ -83,9 +83,7 @@ public class App extends JFrame implements KeyListener {
 				
 				startTimer(ms + 1000);
 			} else {
-				timer.cancel();
-				info_label.setText(ABOUT);
-				info_label.setBackground(Color.WHITE);
+				stopTimer();
 			}
 	    }
 	}
@@ -103,6 +101,7 @@ public class App extends JFrame implements KeyListener {
 		public void actionPerformed(ActionEvent e) {
 			String item = (String) lession_list.getSelectedItem();
 			
+			stopTimer();
 			storage.setOptString("lession", item);
 			loadLession(item);
 		}
@@ -332,6 +331,16 @@ public class App extends JFrame implements KeyListener {
 	private void startTimer(int delay) {
 		timer = new Timer();
 		timer.schedule(new LessionTask(), delay);
+	}
+	
+	private void stopTimer( ) {
+		if (timer != null) {
+			timer.cancel();
+		}
+
+		run_box.setSelected(false);
+		info_label.setText(ABOUT);
+		info_label.setBackground(Color.WHITE);
 	}
 	
 	private int playQuestion(Integer x) {

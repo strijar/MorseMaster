@@ -25,7 +25,7 @@ public class Lession {
 			question = storage.getNextSymbol(remain);
 		}
 		
-		System.out.println(question.symbol);
+		// System.out.println(question.symbol);
 		
 		return question;
 	}

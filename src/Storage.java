@@ -43,8 +43,8 @@ public class Storage {
 		connection.setAutoCommit(false);
 
 		stm_code = connection.prepareStatement("SELECT code FROM codes WHERE symbol = ?");
-		stm_next_symbol = connection.prepareStatement("SELECT symbol, correct, 5*correct/(correct+mistake/2) AS ratio, 100*correct/(correct+mistake/2) as level FROM stat WHERE NOT (level >= ? AND correct >= 10) ORDER BY ratio, lastseen LIMIT 2");
-		stm_next_adv = connection.prepareStatement("SELECT symbol, 100*correct/(correct+mistake/2) AS ratio FROM stat WHERE ratio >= ? AND correct >= 10 ORDER BY ratio DESC, lastseen ASC");
+		stm_next_symbol = connection.prepareStatement("SELECT symbol, correct, 5*correct/(correct+mistake/2) AS ratio, 100*correct/(correct+mistake/2) as level FROM stat WHERE NOT (level >= ? AND correct >= 10) ORDER BY lastseen ASC, ratio ASC LIMIT 2");
+		stm_next_adv = connection.prepareStatement("SELECT symbol, 100*correct/(correct+mistake/2) AS ratio FROM stat WHERE ratio >= ? AND correct >= 10 ORDER BY lastseen ASC, ratio DESC");
 		stm_count_adv = connection.prepareStatement("SELECT count(*) as count, 100*correct/(correct+mistake/2) AS ratio FROM stat WHERE ratio >= ? AND correct >= 10");
 		stm_get_opt = connection.prepareStatement("SELECT val FROM opts WHERE name = ?");
 		stm_set_opt = connection.prepareStatement("INSERT INTO opts (val, name) VALUES (?, ?)");
@@ -114,7 +114,7 @@ public class Storage {
 			
 			for (String symbol : symbols) {
 				stm.setString(1, symbol);
-				stm.setLong(2, System.currentTimeMillis());
+				stm.setLong(2, System.currentTimeMillis() / (30*1000));
 				stm.execute();
 			}
 			stm.close();
@@ -134,7 +134,7 @@ public class Storage {
 				stm = connection.prepareStatement("UPDATE stat SET mistake = mistake + 1, lastseen = ? WHERE symbol = ?");
 			}
 
-			stm.setLong(1, System.currentTimeMillis());
+			stm.setLong(1, System.currentTimeMillis() / (30*1000));
 			stm.setString(2, symbol);
 			stm.execute();
 			stm.close();
@@ -181,13 +181,16 @@ public class Storage {
 			stm_next_adv.setInt(1, adv_level);
 
 			ResultSet		rs = stm_next_adv.executeQuery();
-			String			question = "";
-			int				max_ratio = Math.min(rs.getInt("ratio"), 99);
-			int				count = 2 + (adv_max - 1) * (max_ratio - adv_level) / (100 - adv_level);
 			Vector<AdvItem>	items = new Vector<AdvItem>();
+			String			question = "";
+			int				min_ratio = 99;
 			
-			while (rs.next())
+			while (rs.next()) {
+				min_ratio = Math.min(min_ratio, rs.getInt("ratio"));
 				items.add(new AdvItem(rs.getString("symbol")));
+			}
+
+			int	count = 2 + (adv_max - 1) * (min_ratio - adv_level) / (100 - adv_level);
 
 			for (int i = items.size(); i < count; i++) {
 				AdvItem item = items.get(i % adv);
