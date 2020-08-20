@@ -1,6 +1,7 @@
 import javax.swing.*;
 import javax.swing.JSpinner.DefaultEditor;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.EtchedBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -17,13 +18,14 @@ import java.sql.SQLException;
 import javax.sound.sampled.LineUnavailableException;
 
 import com.alee.laf.WebLookAndFeel;
+import com.alee.laf.button.WebButton;
 import com.alee.laf.combobox.WebComboBox;
 import com.alee.managers.style.StyleId;
 
 @SuppressWarnings("serial")
 public class App extends JFrame implements KeyListener {
 	
-	static final String 	ABOUT = "<html><center><h1>Version 1.1</h1><font size=3>de R1CBU</font></center></html>";
+	static final String 	ABOUT = "<html><center><h1>Version 1.2</h1><font size=3>de R1CBU</font></center></html>";
 	
 	private Storage			storage = null;
 	private Sound			sound = null;
@@ -32,8 +34,6 @@ public class App extends JFrame implements KeyListener {
 	private Question		question = null;
 	private String			answer_buf;
 
-	private JPanel			opt_panel = null;
-	private GridBagLayout	grid = null;
 	private JCheckBox 		run_box = null;
 	private JSpinner 		wpm_spinner = null;
 	private JLabel			info_label = null;
@@ -42,6 +42,8 @@ public class App extends JFrame implements KeyListener {
 	private JSpinner 		adv_level_spinner = null;
 	private JSpinner 		adv_max_spinner = null;
 	private JSpinner 		adv_repeat_spinner = null;
+	
+	private JLabel			bottom_label;
 	
 	private int				question_wait = 0;
 	private int				help_wait = 3000;
@@ -164,6 +166,7 @@ public class App extends JFrame implements KeyListener {
 
 		createOpt();
 		createCenter();
+		createBottom();
 		loadOpts();
 
 		addKeyListener(this);
@@ -174,30 +177,62 @@ public class App extends JFrame implements KeyListener {
 		setVisible(true);
 	}
 	
-	private void createOpt() {
-		opt_panel = new JPanel();
-		grid = new GridBagLayout();
+	private void createBottom() {
+		JPanel			panel = new JPanel();
+		GridBagLayout	grid = new GridBagLayout();
+		GridBagHelper	helper = new GridBagHelper();
 		
-		opt_panel.setLayout(grid);
-		opt_panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+		panel.setLayout(grid);
+		panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), new EmptyBorder(5, 5, 5, 5)));
 
-		GridBagHelper helper = new GridBagHelper();
+		helper.nextCell().alignLeft().setWeights(2.0f, 1.0f);
+		
+		bottom_label = new JLabel("");
+		bottom_label.setFont(new Font("Arial", Font.BOLD, 20));
+		panel.add(bottom_label, helper.get());
+		
+		helper.nextCell();
+		
+		// -- //
+
+		WebButton clear = new WebButton("Clear statistic");
+		clear.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				stopTimer();
+				storage.clearStat();
+				bottom_label.setText("");
+				loadLession(storage.getOptString("lession"));
+			}
+		});
+		clear.setFocusable(false);
+		panel.add(clear, helper.get());
+		
+		add(panel, BorderLayout.SOUTH);
+	}
+	
+	private void createOpt() {
+		JPanel			panel = new JPanel();
+		GridBagLayout	grid = new GridBagLayout();
+		GridBagHelper	helper = new GridBagHelper();
+		
+		panel.setLayout(grid);
+		panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), new EmptyBorder(5, 5, 5, 5)));
 
 		// -- //
 		
 		helper.nextCell().alignLeft().gap(10);
-		opt_panel.add(new JLabel("Lession:"), helper.get());
+		panel.add(new JLabel("Lession:"), helper.get());
 
 		helper.nextCell().fillHorizontally();
 		lession_list = new WebComboBox(storage.getLessions());
 		lession_list.addActionListener(new LessionListener());
 		lession_list.setFocusable(false);
-		opt_panel.add(lession_list, helper.get());
+		panel.add(lession_list, helper.get());
 		
 		// -- //
 		
 		helper.nextRow().nextCell().alignLeft().gap(10);
-		opt_panel.add(new JLabel("Speed (WPM):"), helper.get());
+		panel.add(new JLabel("Speed (WPM):"), helper.get());
 		helper.nextCell().fillHorizontally();
 
 		JSpinner.DefaultEditor editor;
@@ -208,28 +243,28 @@ public class App extends JFrame implements KeyListener {
 		editor.getTextField().setFocusable(false);
 		
 		wpm_spinner.addChangeListener(new WPMListener());
-		opt_panel.add(wpm_spinner, helper.get());
+		panel.add(wpm_spinner, helper.get());
 
 		// -- //
 
 		helper.nextRow().nextCell().alignLeft().gap(10);
-		opt_panel.add(new JLabel("Answer timeout:"), helper.get());
+		panel.add(new JLabel("Answer timeout:"), helper.get());
 		
 		helper.nextCell().fillHorizontally();
 		timeout_list = new WebComboBox(timeout_labels);
 		timeout_list.addActionListener(new TimeoutListener());
 		timeout_list.setFocusable(false);
-		opt_panel.add(timeout_list, helper.get());
+		panel.add(timeout_list, helper.get());
 		
 		// -- //
 		
-		helper.insertEmptyRow(opt_panel, 24);
+		helper.insertEmptyRow(panel, 24);
 		helper.nextRow().nextCell().setGridWidth(2);
 
-		opt_panel.add(new JLabel("Advanced"), helper.get());
+		panel.add(new JLabel("Advanced"), helper.get());
 
 		helper.nextRow().nextCell().alignLeft().gap(10);
-		opt_panel.add(new JLabel("Level (%):"), helper.get());
+		panel.add(new JLabel("Level (%):"), helper.get());
 		helper.nextCell().fillHorizontally();
 
 		adv_level_spinner = new JSpinner(new SpinnerNumberModel(75, 50, 95, 1));
@@ -237,12 +272,12 @@ public class App extends JFrame implements KeyListener {
 		editor.getTextField().setEditable(false);
 		editor.getTextField().setFocusable(false);
 		adv_level_spinner.addChangeListener(new AdvLevelListener());
-		opt_panel.add(adv_level_spinner, helper.get());
+		panel.add(adv_level_spinner, helper.get());
 		helper.nextRow().nextCell().alignLeft().gap(10);
 
 		// --//
 		
-		opt_panel.add(new JLabel("Max (char):"), helper.get());
+		panel.add(new JLabel("Max (char):"), helper.get());
 		helper.nextCell().fillHorizontally();
 
 		adv_max_spinner = new JSpinner(new SpinnerNumberModel(3, 2, 7, 1));
@@ -250,13 +285,13 @@ public class App extends JFrame implements KeyListener {
 		editor.getTextField().setEditable(false);
 		editor.getTextField().setFocusable(false);
 		adv_max_spinner.addChangeListener(new AdvMaxListener());
-		opt_panel.add(adv_max_spinner, helper.get());
+		panel.add(adv_max_spinner, helper.get());
 
 		// -- //
 		
 		helper.nextRow().nextCell().alignLeft().gap(10);
 
-		opt_panel.add(new JLabel("Repeat:"), helper.get());
+		panel.add(new JLabel("Repeat:"), helper.get());
 		helper.nextCell().fillHorizontally();
 
 		adv_repeat_spinner = new JSpinner(new SpinnerNumberModel(1, 1, 3, 1));
@@ -264,11 +299,11 @@ public class App extends JFrame implements KeyListener {
 		editor.getTextField().setEditable(false);
 		editor.getTextField().setFocusable(false);
 		adv_repeat_spinner.addChangeListener(new AdvRepeatListener());
-		opt_panel.add(adv_repeat_spinner, helper.get());
+		panel.add(adv_repeat_spinner, helper.get());
 		
 		// -- //
 		
-		helper.insertEmptyRow(opt_panel, 24);
+		helper.insertEmptyRow(panel, 24);
 		helper.nextRow().nextCell().alignLeft();
 		
 		run_box = new JCheckBox("Run", false);
@@ -276,10 +311,10 @@ public class App extends JFrame implements KeyListener {
 		run_box.setFocusable(false);
 		run_box.setMnemonic(KeyEvent.VK_R);
 		run_box.addItemListener(new RunListener());
-		opt_panel.add(run_box, helper.get());
-		helper.insertEmptyFiller(opt_panel);
+		panel.add(run_box, helper.get());
+		helper.insertEmptyFiller(panel);
 		
-		add(opt_panel, BorderLayout.EAST);
+		add(panel, BorderLayout.EAST);
 	}
 	
 	private void createCenter() {
@@ -395,6 +430,7 @@ public class App extends JFrame implements KeyListener {
 				startTimer(help_wait);
 			}
 			question = null;
+			bottom_label.setText(String.format("Worst: %d%%", storage.getWorst()));
 		}
 	}
 	

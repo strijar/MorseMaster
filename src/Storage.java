@@ -16,6 +16,7 @@ public class Storage {
 	private PreparedStatement	stm_count_adv = null;
 	private PreparedStatement	stm_get_opt = null;
 	private PreparedStatement	stm_set_opt = null;
+	private PreparedStatement	stm_worst = null;
 	
 	private int					adv_level = 75;
 	private int					adv_max = 3;
@@ -33,7 +34,7 @@ public class Storage {
 	private class AdvItemShuffle implements Comparator<AdvItem> {
 		@Override
 		public int compare(AdvItem a, AdvItem b) {
-			return (a.shuffle > b.shuffle) ? 1 : -1;
+			return (a.shuffle < b.shuffle) ? 1 : -1;
 		}
 		
 	}
@@ -44,8 +45,9 @@ public class Storage {
 
 		stm_code = connection.prepareStatement("SELECT code FROM codes WHERE symbol = ?");
 		stm_next_symbol = connection.prepareStatement("SELECT symbol, correct, 5*correct/(correct+mistake/2) AS ratio, 100*correct/(correct+mistake/2) as level FROM stat WHERE NOT (level >= ? AND correct >= 10) ORDER BY lastseen ASC, ratio ASC LIMIT 2");
-		stm_next_adv = connection.prepareStatement("SELECT symbol, 100*correct/(correct+mistake/2) AS ratio FROM stat WHERE ratio >= ? AND correct >= 10 ORDER BY lastseen ASC, ratio DESC");
+		stm_next_adv = connection.prepareStatement("SELECT symbol, 100*correct/(correct+mistake/2) AS ratio FROM stat WHERE ratio >= ? AND correct >= 10 ORDER BY lastseen, ratio");
 		stm_count_adv = connection.prepareStatement("SELECT count(*) as count, 100*correct/(correct+mistake/2) AS ratio FROM stat WHERE ratio >= ? AND correct >= 10");
+		stm_worst = connection.prepareStatement("SELECT min(100*correct/(correct+mistake/2)) AS worst FROM stat");
 		stm_get_opt = connection.prepareStatement("SELECT val FROM opts WHERE name = ?");
 		stm_set_opt = connection.prepareStatement("INSERT INTO opts (val, name) VALUES (?, ?)");
 	}
@@ -134,7 +136,7 @@ public class Storage {
 				stm = connection.prepareStatement("UPDATE stat SET mistake = mistake + 1, lastseen = ? WHERE symbol = ?");
 			}
 
-			stm.setLong(1, System.currentTimeMillis() / (30*1000));
+			stm.setLong(1, System.currentTimeMillis() / (30*1000) - (int)(Math.random() * 3.0f));
 			stm.setString(2, symbol);
 			stm.execute();
 			stm.close();
@@ -192,10 +194,14 @@ public class Storage {
 
 			int	count = 2 + (adv_max - 1) * (min_ratio - adv_level) / (100 - adv_level);
 
-			for (int i = items.size(); i < count; i++) {
-				AdvItem item = items.get(i % adv);
+			if (items.size() > count) {
+				items = new Vector<AdvItem>(items.subList(0, count));
+			} else {
+				for (int i = items.size(); i < count; i++) {
+					AdvItem item = items.get(i % adv);
 				
-				items.add(new AdvItem(item.symbol));
+					items.add(new AdvItem(item.symbol));
+				}
 			}
 			
 			items.sort(new AdvItemShuffle());
@@ -225,6 +231,16 @@ public class Storage {
 		}
 		
 		return items;
+	}
+
+	public int getWorst() {
+		try {
+			ResultSet rs = stm_worst.executeQuery();
+			
+			return rs.getInt("worst");
+		} catch (SQLException e) {
+			return 0;
+		}
 	}
 
 	public int getOptInt(String name, int def) {

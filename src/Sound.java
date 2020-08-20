@@ -6,12 +6,15 @@ import javax.sound.sampled.SourceDataLine;
 public class Sound {
 	private static final int	SAMPLE_RATE = 8000;
 
-	private int					freq = 700;
-	private int					attack = 5;
-	private int					dit = 100;
-	private int					dah = 300;
+	private int					freq = 700;			// Hz
+	private int					attack = 3;			// ms
+	private int					dit = 100;			// ms
+	private int					dah = 300;			// ms
+	private int					symbol_pause = 3;	// dits
+	private int					word_pause = 7;		// dits
 	
 	SourceDataLine				line;
+	byte[]						buf;
 
 	public Sound() throws LineUnavailableException {
         final AudioFormat af = new AudioFormat(SAMPLE_RATE, 8, 1, true, true);
@@ -24,13 +27,15 @@ public class Sound {
 	public void wpm(int x) {
 		dit = (int) Math.round(60.0/(x*50.0)*1000.0);
 		dah = dit * 3;
+		
+		dit += attack;
+		dah += attack;
 	}
 	
-	public void tone(int ms, int freq) {
+	public int tone(int ms, int freq, int from) {
 		int 			length = SAMPLE_RATE * ms / 1000;
 		int				a = SAMPLE_RATE * attack / 1000;
 		int				r = length - a;
-		byte[]			sin = new byte[length];
 		
 		for (int i = 0; i < length; i++) {
 			double period = (double)SAMPLE_RATE / freq;
@@ -43,79 +48,92 @@ public class Sound {
             	amp = 1.0f - (double)(i-r)/a;
             }
             
-            sin[i] = (byte)(Math.sin(angle) * amp * 127f);
+            buf[from + i] = (byte)(Math.sin(angle) * amp * 127f);
         }
-		line.write(sin, 0, length);
+		
+		return from + length;
 	}
 
-	public void pause(int ms) {
+	public int pause(int ms, int from) {
 		int 			length = SAMPLE_RATE * ms / 1000;
-		byte[]			sin = new byte[length];
 		
 		for (int i = 0; i < length; i++) {
-			sin[i] = 0;
+			buf[from + i] = 0;
         }
-		line.write(sin, 0, length);
+		
+		return from + length;
 	}
 	
 	public int code(final String text) {
 		final char[]	chars = text.toCharArray();
-		int				res = 100;
+		int				length = 100;
 		
 		for (char c : chars) {
 			switch (c) {
 			case '.':
-				res += dit + dit;
+				length += dit + dit;
 				break;
 			case '-':
-				res += dah + dit;
+				length += dah + dit;
 				break;
 			case ' ':
-				res += dit*2;
+				length += dit * (symbol_pause-1);
 				break;
 			case '|':
-				res += dit*6;
+				length += dit * (word_pause-1);
 				break;
 			}
 		}
 		
+		buf = new byte[SAMPLE_RATE * length / 1000];
+		
 		new Thread(new Runnable() {
 		    @Override 
 		    public void run() {
-				pause(100);
+		    	int from;
+
+				from = pause(100, 0);
 
 		    	for (char c : chars) {
 					switch (c) {
 					case '.':
-						tone(dit, freq);
-						pause(dit);
+						from = tone(dit, freq, from);
+						from = pause(dit, from);
 						break;
 					case '-':
-						tone(dah, freq);
-						pause(dit);
+						from = tone(dah, freq, from);
+						from = pause(dit, from);
 						break;
 					case ' ':
-						pause(dit*2);
+						from = pause(dit * (symbol_pause - 1), from);
 						break;
 					case '|':
-						pause(dit*6);
+						from = pause(dit * (word_pause - 1), from);
 						break;
 					}
 				}
+		    	
+				line.write(buf, 0, buf.length);
 		    }
 		}).start();
 		
-		return res;
+		return length;
 	}
 	
 	public void alarm() {
 		new Thread(new Runnable() {
 		    @Override 
 		    public void run() {
+		    	int from = 0;
+		    	int length = (50+50)*3; 
+
+    			buf = new byte[SAMPLE_RATE * length / 1000];
+		    	
 		    	for (int i = 0; i < 3; i++) {
-		    		tone(50, 220);
-		    		tone(50, 440);
+		    		from = tone(50, 220, from);
+		    		from = tone(50, 440, from);
 		    	}
+	    		line.write(buf, 0, buf.length);
 		    }
 		}).start();
 	}
